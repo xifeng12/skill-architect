@@ -1,122 +1,243 @@
 ---
 name: skill-architect
 description: |
-  设计 Agent Skill 的架构模式选择助手。专门回答"这个 skill 该用什么设计模式"和"如何组织 skill 的文件结构"。基于 5 种核心模式（Tool Wrapper, Generator, Reviewer, Inversion, Pipeline）提供架构咨询，不处理 skill 的完整创建、评估或打包流程。Triggers: "skill架构", "设计skill", "skill模式", "skill template", "skill规范", "skill design", "帮我设计skill", "skill structure", "skill pattern"。
+  Use when the user asks how to design an Agent Skill, choose a skill pattern, split SKILL.md and references, write routing descriptions, or decide whether content belongs in a Skill, AGENTS.md, script, prompt, or reference. Also use for Chinese skill-design requests like "这个 skill 怎么设计". Do not use to create, test, package, publish, or optimize a Skill; use skill-forge. Do not use for general task escalation; use dynamic-workflow.
 ---
 
 # Skill Architect
 
-专门设计 Agent Skills 的架构助手，基于 5 种核心设计模式构建符合 ADK 规范的 Skill。
+Design Agent Skills as routable, reusable context modules.
 
-## 5 种设计模式
+This Skill is for architecture decisions, not full implementation.
 
-| 模式 | 用途 | 典型场景 |
-|------|------|----------|
-| **Tool Wrapper** | 封装外部工具/API | 封装 yt-dlp、OCR库、REST API |
-| **Generator** | 生成结构化内容 | 生成 PR Description、配置文件、代码模板 |
-| **Reviewer** | 评审/检查 | 代码评审、安全审计、文档质量检查 |
-| **Inversion** | 深度信息采集 | 需求分析、技术选型、项目规划 |
-| **Pipeline** | 多步协调任务 | 复杂文件处理、多阶段工作流 |
-| **Stateful / Memory** | 跨调用保持状态 | Any scenario requiring history, user config, or audit trail |
+It helps decide:
 
-详细模式说明见 `references/design-patterns.md`。
+- whether something should become a Skill
+- when the Skill should load
+- which architecture pattern fits
+- how to split `SKILL.md`, `references/`, `assets/`, and `scripts/`
+- how to avoid routing overlap with neighboring Skills
 
-## 设计流程
+## Core Principle
 
-### Step 0: 场景分类 (Scene Classification)
+Design the route before designing the body.
 
-Classify the user's request into one of 9 categories BEFORE selecting a Pattern. Category determines content strategy; Pattern determines file structure. These are orthogonal decisions.
+A Skill is useful only if the agent loads it at the right time and does not load it at the wrong time.
 
-| Category | Content Focus | Natural Pattern Fit |
-|----------|--------------|-------------------|
-| 库 / API 参考 | Correct usage + known Gotchas | Tool Wrapper |
-| 产品验证 | Acceptance criteria + edge cases | Reviewer / Pipeline |
-| 数据获取分析 | Data source + query format + auth | Tool Wrapper |
-| 业务流程自动化 | Trigger conditions + error handling | Pipeline |
-| 代码脚手架 | Template constraints + naming rules | Generator |
-| 代码质量审查 | Checklist + severity levels | Reviewer |
-| CI/CD 部署 | Step order + Gate conditions | Pipeline |
-| Runbook | Symptom → investigation → structured report | Pipeline + Inversion |
-| 基础设施运维 | Operation procedure + rollback strategy | Pipeline + Tool Wrapper |
+The frontmatter `description` is a routing trigger, not a feature summary.
 
-If the request spans multiple categories, select the dominant one. Note secondary categories for the references/ structure.
+Prefer:
 
-Load `references/anthropic-content-quality.md` now. Apply its rules throughout Steps 1–4.
-
-### Step 1: 需求分析 & 模式选择
-
-分析用户需求，选择最合适的设计模式。快速决策：
-
-```
-需要调用外部工具/API？ → Tool Wrapper
-需要生成结构化内容？ → Generator
-需要评审/检查？ → Reviewer
-需要多步骤协调？ → Pipeline
-需要深度信息采集？ → Inversion
+```yaml
+description: Use when the user asks ...
 ```
 
-复杂场景可组合多种模式（如 Pipeline + Generator）。
+Avoid:
 
-### Step 2: 信息采集
-
-根据选定的模式，采集关键信息：
-
-| 模式 | 关键信息 |
-|------|----------|
-| Tool Wrapper | 工具名称、可用操作、参数说明、触发条件 |
-| Generator | 输出格式、必需字段、模板要求 |
-| Reviewer | 评审对象、检查清单、输出格式 |
-| Pipeline | 步骤定义、输入输出、Gate 条件 |
-| Inversion | 信息需求、Phase 定义、完成条件 |
-| Stateful / Memory | State triggers (history needed? config needed?), state file type (.skill-log.json or .skill-state.json) |
-| All patterns | Gotchas: what does Claude do WRONG in this domain without guidance? Collect at least 2 before proceeding. |
-
-### Step 3: 生成 Skill 架构
-
-使用 `assets/skill-template.md` 作为蓝图，生成：
-
-1. **推荐目录结构**
-2. **SKILL.md 内容**（含 frontmatter）
-3. **references/ 文件**（如需要）
-4. **assets/ 文件**（如需要）
-
-### Step 4: 确认保存
-
-询问用户是否需要保存到指定位置。
-
-## Skill 目录规范
-
-```
-skill-name/
-├── SKILL.md              # 必需：主配置文件
-├── references/           # 可选：参考文档、规则清单
-│   └── api-docs.md
-└── assets/               # 可选：模板、资源文件
-    └── template.md
+```yaml
+description: This skill provides ...
 ```
 
-### 文件职责分离
+## Route Contract
 
-| 文件 | 内容 |
-|------|------|
-| `SKILL.md` | 触发条件、核心逻辑、使用说明 |
-| `references/` | API 文档、规范、检查清单等参考资料 |
-| `assets/` | 模板文件、示例资源 |
+Load when the user asks about:
 
-## 设计原则
+- designing an Agent Skill
+- choosing a Skill architecture pattern
+- deciding whether a workflow should become a Skill
+- deciding whether content belongs in `AGENTS.md`, a Skill, a reference file, a script, or a prompt
+- splitting `SKILL.md` and `references/`
+- writing or improving Skill routing descriptions
+- preventing route collision between neighboring Skills
+- converting recurring operational experience, gotchas, or workflows into reusable context
 
-1. **单一职责**：每个 Skill 专注一个核心功能
-2. **分离关注点**：逻辑、规则、模板分开存放
-3. **明确触发**：description 包含功能描述 + 触发短语
-4. **保持精简**：SKILL.md 控制在 500 行以内
-5. **可测试性**：设计时考虑如何验证效果
-6. **内容质量**：遵循 `references/anthropic-content-quality.md` 中的 Anthropic 内容质量清单
+Common Chinese triggers:
 
-## 与 skill-creator 的分工
+- "这个 skill 应该怎么设计？"
+- "这个适合做成 skill 吗？"
+- "应该放 AGENTS.md 还是 skill？"
+- "这个 skill 应该用什么模式？"
+- "SKILL.md 和 references 怎么拆？"
+- "这个 description 怎么写更容易触发？"
+- "这个 workflow 要不要沉淀成 skill？"
 
-| Skill | 定位 |
-|-------|------|
-| **skill-architect** | 架构设计：选择模式、定义结构、生成 SKILL.md 框架 |
-| **skill-creator** | 创建迭代：编写内容、运行测试、评估优化 |
+Do not load when the user asks to:
 
-当需要完整创建并迭代优化 Skill 时，先由 skill-architect 设计架构，再交由 skill-creator 实现和测试。
+- create, test, package, publish, or optimize a Skill
+- run Skill evals
+- build `.skill` artifacts
+- execute the workflow that another specialized Skill already covers
+- solve a one-off task where no reusable Skill design is needed
+- escalate a broad uncertain task into a multi-agent or multi-step workflow
+
+Neighbor boundary:
+
+| User intent | Preferred route |
+| --- | --- |
+| "这个 skill 应该怎么设计？" | `skill-architect` |
+| "帮我创建并测试这个 skill" | `skill-forge` |
+| "把这个 skill 打包发布" | `skill-forge` |
+| "评估这个 skill 是否退役" | `skill-forge` |
+| "自动迭代优化这个 skill" | `skill-forge` or dedicated optimization Skill if present |
+| "这个复杂任务该不该升级成 workflow？" | `dynamic-workflow` |
+| "这个生产变更怎么安全执行？" | safe-change / production safety Skill |
+
+## Minimal Workflow
+
+Follow this order:
+
+```text
+1. Define route contract
+2. Decide Skill / non-Skill container
+3. Classify category
+4. Choose dominant pattern
+5. Identify neighbor Skills
+6. Design root SKILL.md responsibility
+7. Split long material into references/assets/scripts
+8. Define trigger tests
+9. Produce architecture recommendation
+```
+
+## Skill / Non-Skill Decision
+
+Use a Skill when most are true:
+
+- the workflow repeats across sessions or projects
+- the agent regularly makes domain-specific mistakes without guidance
+- the task needs routing by user intent
+- the guidance should load only when relevant
+- the process has stable constraints, gates, gotchas, or templates
+- the workflow benefits from structured references, scripts, or assets
+
+Do not recommend a Skill when most are true:
+
+- it is a one-off instruction
+- it is better expressed as a script
+- it is better stored as project documentation
+- it is a stable global behavior rule that should always apply
+- it is only a short prompt template
+- it changes so often that reuse would create stale guidance
+
+Container decision:
+
+| Best container | Use when |
+| --- | --- |
+| `AGENTS.md` | Always-on workspace rule, safety invariant, routing trigger, hard stop condition |
+| Skill | Reusable workflow loaded only for certain user intents |
+| `references/` | Long explanation, examples, API notes, checklists, gotchas |
+| `assets/` | Templates, schemas, sample files, reusable prompt blocks |
+| `scripts/` | Deterministic validation, formatting, conversion, scoring, setup |
+| Prompt | One-off wording or temporary instruction |
+
+## Pattern Fast Path
+
+Choose the lightest pattern that makes the Skill reliable.
+
+```text
+Needs external tool/API correctness? -> Tool Wrapper
+Needs structured generation? -> Generator
+Needs checking, audit, or judgment? -> Reviewer
+Needs multi-phase coordination? -> Pipeline
+Needs discovery before action? -> Inversion
+Needs history, state, or audit trail? -> Stateful / Memory
+Main value is gotchas and reference routing? -> Reference-heavy
+```
+
+Avoid over-patterning. A hybrid Skill should still have one dominant pattern.
+
+For detailed pattern mapping, read `references/category-patterns.md`.
+
+## Root File Responsibility
+
+Keep root `SKILL.md` small and operational.
+
+Keep in root:
+
+- route contract
+- use / do-not-use boundary
+- core principle
+- minimal workflow
+- pattern fast path
+- safety gates
+- output contract
+- reference routing
+
+Move out of root:
+
+- long examples
+- directory templates
+- large classification tables
+- detailed gotcha guidance
+- anti-pattern lists
+- detailed capture checklists
+- historical lessons
+
+Reference routing:
+
+- Read `references/description-examples.md` when improving or reviewing frontmatter descriptions.
+- Read `references/category-patterns.md` when category or pattern choice is unclear.
+- Read `references/capture-guide.md` when collecting information before designing a Skill.
+- Read `references/directory-templates.md` when proposing a file structure.
+- Read `references/gotchas-guide.md` when extracting domain gotchas or lessons learned.
+- Read `references/anti-patterns.md` when reviewing an existing Skill for design problems.
+- Read `references/output-format.md` when producing a full architecture recommendation.
+
+## Quality Checklist
+
+Before delivering a Skill architecture, verify:
+
+- [ ] Description is written as a route trigger, not a feature summary
+- [ ] Load and do-not-load cases are explicit
+- [ ] Neighbor Skills are named when relevant
+- [ ] Skill / non-Skill decision is justified
+- [ ] Dominant pattern is selected
+- [ ] Secondary pattern does not bloat the design
+- [ ] Root `SKILL.md` remains small and operational
+- [ ] Long guidance is pushed to `references/`
+- [ ] Deterministic checks are pushed to `scripts/`
+- [ ] Templates and schemas are pushed to `assets/`
+- [ ] At least two gotchas are identified or requested
+- [ ] Basic trigger tests are included
+
+## Relationship to Other Skills
+
+`skill-architect` is upstream of implementation Skills.
+
+Use it to decide architecture.
+
+Use `skill-forge` when the user asks to create, test, package, publish, optimize, evaluate, or retire a Skill.
+
+Use `dynamic-workflow` when the user asks whether a broad, uncertain, multi-step task should be escalated into a structured workflow.
+
+Use safe-change or production safety Skills when the task involves risky production-like changes.
+
+Boundary rule:
+
+```text
+Architecture-only question -> skill-architect
+Build / test / package request -> skill-forge
+General complex task escalation -> dynamic-workflow
+Production-risk execution -> safe-change discipline
+```
+
+## Final Response Contract
+
+When responding as Skill Architect, include:
+
+- clear recommendation
+- route contract
+- Skill / non-Skill decision
+- dominant category
+- pattern choice
+- suggested structure
+- root `SKILL.md` plan
+- reference split plan
+- boundary with neighboring Skills
+- gotchas to capture
+- validation method
+
+For full recommendations, use `references/output-format.md`.
+
+If confidence is not high, state what evidence is missing.
+
+Do not claim a Skill is production-ready unless trigger evals, content checks, and neighbor confusion cases have been considered.
