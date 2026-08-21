@@ -1,190 +1,214 @@
 # ADK Skill Design Patterns
 
-5 种核心设计模式，用于构建高质量 Agent Skills。
+本仓库保留 **5 个 Pattern 名称**：Tool Wrapper、Generator、Reviewer、Inversion、Pipeline。
+
+这 5 个名称用于描述确实匹配的 Skill 架构行为；**不是每个 Skill 都必须选择一个 Pattern**。如果没有任何一个能实质解释 Skill 的核心可复用行为，使用：
+
+```text
+Pattern = none
+```
+
+`Stateful/Memory`、`Reference-heavy`、coordination style、runtime capability policy 等属于局部行为、内容策略或实现特征，不新增为 Pattern 名称。
 
 ---
 
 ## 1. Tool Wrapper（工具封装模式）
 
-**用途**：封装外部库、CLI 工具或 API，使其对 Agent 可用。
+**用途**：当 Skill 的核心可复用价值是让 Agent 正确使用外部库、CLI、API、SDK、MCP 或其他工具能力。
 
-```
+```text
 skill-name/
-├── SKILL.md           # 调用规则、参数说明、触发条件
+├── SKILL.md           # 触发、调用边界、核心使用规则
 ├── references/
-│   └── api-docs.md    # API 文档摘要、参数说明
-└── assets/
-    └── examples/      # 示例文件（可选）
+│   └── api-docs.md    # 按需加载的 API/参数/错误信息
+└── scripts/           # 仅当确定性包装/校验确有价值时添加
 ```
 
 **设计要点**：
-- `SKILL.md` 只写"怎么调用"，不写"API 细节"
-- API 文档、参数表放在 `references/`
-- 提供明确的触发短语（triggers）
-
-**示例**：封装 yt-dlp、paddleocr、REST API
+- 根文件写调用语义、边界、关键 gotcha，不复制整份 API 文档；
+- 参数表和长说明放 `references/`；
+- 工具缺失不自动等于“安装它”；能力发现和环境修改必须分阶段。
 
 ---
 
 ## 2. Generator（生成器模式）
 
-**用途**：根据模板生成结构化输出（代码、文档、配置文件等）。
+**用途**：根据约束或模板生成结构化输出（代码、文档、配置、模板实例等）。
 
-```
+```text
 skill-name/
-├── SKILL.md           # 生成流程、字段要求
+├── SKILL.md
 ├── references/
-│   └── conventions.md # 编码规范、命名约定
+│   └── conventions.md
 └── assets/
-    └── template.md    # 输出模板
+    └── template.md
 ```
 
 **设计要点**：
-- 使用 `assets/` 存放模板文件
-- `SKILL.md` 定义必需字段和生成逻辑
-- 分离"模板"与"填充规则"
-
-**示例**：生成 PR Description、README.md、配置文件
+- 使用 `assets/` 存放真正需要复用的模板；
+- `SKILL.md` 定义生成约束、必需字段和行为边界；
+- 分离模板本体与填充/判断规则。
 
 ---
 
 ## 3. Reviewer（评审模式）
 
-**用途**：对代码、文档、配置等进行评审，输出结构化评审报告。
+**用途**：对代码、文档、配置、方案或结果进行评审、核验、审计或判定。
 
-```
+```text
 skill-name/
-├── SKILL.md           # 评审流程、输出格式
+├── SKILL.md
 ├── references/
-│   └── checklist.md   # 评审准则清单
+│   └── checklist.md
 └── assets/
-    └── report-template.md  # 评审报告模板
+    └── report-template.md  # 仅当稳定格式确有价值
 ```
 
 **设计要点**：
-- **关键**：分离 Checklist 与评审协议
-- Checklist 放在 `references/`，可独立更新
-- 评审流程写在 `SKILL.md`
-
-**示例**：代码评审、安全审计、文档质量检查
+- 分离评审协议与详细 checklist；
+- 评审准则可放 references 并独立迭代；
+- 输出格式应服务实际消费方，不为了结构化而结构化。
 
 ---
 
 ## 4. Inversion（反转模式）
 
-**用途**：通过多轮访谈采集信息，确保输入完整后再行动。
+**用途**：任务在行动前必须获取一组缺失信息，否则建议或执行容易失真。
 
-```
+```text
 skill-name/
-├── SKILL.md           # 访谈流程、Phase 定义
+├── SKILL.md
 ├── references/
-│   └── questions.md   # 问题库（可选）
+│   └── questions.md   # 可选
 └── assets/
-    └── form.md        # 信息采集表（可选）
+    └── form.md        # 可选
 ```
 
 **设计要点**：
-- **Phase-based**：定义清晰的访谈阶段
-- **禁止提前行动**：未完成采集前不生成输出
-- **Gate 条件**：每个 Phase 有明确的完成条件
-
-**示例**：需求分析、项目规划、技术选型咨询
+- 明确哪些信息缺失会阻止下一步；
+- Gate 应服务真实决策，不机械要求填完所有字段；
+- 用户/环境已提供足够信息时，不重复提问。
 
 ---
 
 ## 5. Pipeline（流水线模式）
 
-**用途**：协调多步骤任务，确保每个步骤按条件执行。
+**用途**：Skill 的核心可复用行为是协调多个阶段、Gate 或产物，并且顺序/阶段边界会影响正确性。
 
-```
+```text
 skill-name/
-├── SKILL.md           # Step 定义、Gate 条件、流转规则
+├── SKILL.md
 ├── references/
-│   └── rules.md       # 业务规则（可选）
-└── assets/
-    └── templates/     # 各步骤的模板（可选）
+│   └── workflow.md
+└── scripts/
+    └── validate.*     # 仅当确定性验证确有价值
 ```
 
 **设计要点**：
-- **显式 Step**：每个步骤有明确输入输出
-- **Gate 条件**：定义步骤间的准入条件
-- **状态追踪**：记录当前执行状态
-
-**示例**：复杂文件处理、多阶段代码生成、端到端工作流
-
----
-
-## 模式组合
-
-复杂 Skill 可以组合多种模式：
-
-| 组合 | 适用场景 |
-|------|----------|
-| Pipeline + Inversion | 需要信息采集的多步任务 |
-| Pipeline + Generator | 多阶段内容生成 |
-| Inversion + Reviewer | 带信息核对的评审 |
-| Tool Wrapper + Pipeline | 多工具协调工作流 |
+- 阶段存在应有任务语义依据，而不是把简单查询人为切成流程；
+- 明确跨阶段条件和 STOP；
+- 后续阶段不是“存在就必须执行”，例如 discovery 完成后未必需要 reader/action；
+- 不把可变研究任务写成僵硬 railway。
 
 ---
 
-## 最佳实践
+## Pattern Composition
 
-1. **单一职责**：每个 Skill 专注一个核心功能
-2. **分离关注点**：逻辑、规则、模板分开存放
-3. **明确触发**：提供清晰的 triggers 描述
-4. **可测试性**：设计时可考虑如何验证效果
-5. **保持精简**：SKILL.md 控制在 500 行以内
+复杂 Skill 可以真实组合多个上述 Pattern，但 **Hybrid 不是新的 Pattern 名称**。
+
+示例：
+
+| Composition | 适用场景 |
+|---|---|
+| Pipeline + Inversion | 多阶段任务中，前置阶段必须收集关键缺失信息 |
+| Pipeline + Generator | 多阶段结构化内容生成 |
+| Inversion + Reviewer | 评审前必须先补齐关键上下文 |
+| Tool Wrapper + Pipeline | 多阶段流程中正确工具调用本身也是核心能力 |
+
+如果一个 Pattern 明显主导，可以说明 dominant Pattern；如果没有必要，不强制排序。
+
+---
+
+## Pattern 之外的架构维度
+
+这些因素可能非常重要，但不应改名为新 Pattern：
+
+- **Reference-heavy**：大部分细节按需从 references 加载，是内容策略；
+- **Stateful / Memory**：需要历史、配置、审计或跨运行连续性，是状态需求；
+- **Coordination**：并行、顺序、handoff、synthesis 等应按实际行为描述，不强制闭合枚举；
+- **Runtime capability policy**：工具是否可用、语义覆盖是否等价、fallback/STOP 如何处理，是运行时策略。
+
+`none` 对这些局部行为同样有效：不要为了模板完整性添加不需要的状态、reference、协调或 provider 管理。
+
+---
+
+## Runtime-informed lessons
+
+项目级 `external-knowledge v0.2.1` 验证支持了以下通用设计方向：
+
+1. semantic trigger 可以基于意图而不是字面词；
+2. `operational_status` 与 semantic `coverage` 要分离；
+3. `UNKNOWN` 不等于 `MISSING`；
+4. degraded fallback 可以在披露覆盖损失后完成任务；
+5. capability 缺失/未验证不自动授权安装或修环境；
+6. 不同阶段（如 discovery / reader）可以有独立 STOP；
+7. 不要为了完整性 fan-out；
+8. 工具名不同不代表 failure domain 独立。
+
+这些是项目 runtime evidence，不是 Pattern 定义。详见 `runtime-evidence-external-knowledge-v0.2.1.md`。
 
 ---
 
 ## Content Strategy by Scene Category
 
-These content guidelines apply AFTER pattern selection. Each category has distinct content priorities derived from Anthropic's production skill lessons.
+这些内容策略在 Pattern（或 `none`）判断之后使用。
 
 ### 1. 库 / API 参考
-- Lead with Gotchas: what does Claude do wrong when calling this API without guidance?
-- Include auth patterns, rate limit handling, and deprecated parameter warnings
-- Do NOT restate what the API docs already say
+- Lead with Gotchas: 没有 Skill 时模型最容易犯什么具体错误？
+- 包含必要的 auth、版本、弃用参数和运行时边界；
+- 不重复已有文档能直接查询到的大段静态知识。
 
 ### 2. 产品验证
-- Define acceptance criteria precisely — not "works correctly" but specific pass/fail conditions
-- Include edge cases that caused failures in past evals
-- This category has the highest quality uplift potential
+- 明确定义 acceptance criteria；
+- 优先沉淀真实 eval 暴露的 edge case；
+- 将“问题真实存在”和“写进 Skill 后是否改善模型”分开验证。
 
 ### 3. 数据获取分析
-- Document data source locations, query formats, and authentication requirements
-- Include rate limits and pagination patterns
-- Specify error handling for network failures and data format mismatches
+- 记录 source semantics、query/reader 边界和证据要求；
+- 工具可用性与语义覆盖分开；
+- fallback 必须有具体 gap 或 preferred path 非 viable 的证据；
+- 足够回答时 STOP。
 
 ### 4. 业务流程自动化
-- Describe trigger conditions and termination conditions explicitly
-- Include error handling and rollback paths
-- Avoid "railway" instructions — give Claude flexibility for variations
+- 描述真实 trigger、阶段和终止条件；
+- 包含必要错误处理和 rollback；
+- 避免 railway instructions，保留对合理变化的适应性。
 
 ### 5. 代码脚手架
-- Define template constraints and naming rules precisely
-- Include file structure requirements and mandatory sections
-- Specify what must be generated vs what is optional
+- 定义模板约束和命名规则；
+- 明确必需/可选产物；
+- 模板放 assets，判断规则留在 Skill。
 
 ### 6. 代码质量审查
-- Provide checklist with severity levels (critical/warning/info)
-- Include specific patterns that indicate bugs or security issues
-- Define output format for review reports
+- Checklist 需要具体、可判定；
+- 严重性只有在消费方确实需要时才引入；
+- 评审结果格式与后续使用匹配。
 
 ### 7. CI/CD 部署
-- Define step order with explicit gate conditions between stages
-- Include rollback triggers and failure handling
-- Specify environment-specific configurations
+- 明确 Gate、失败触发和 rollback；
+- 环境假设必须显式；
+- validation 与 implementation 不得静默跨阶段。
 
-### 8. Runbook
-- Structure: Symptom → Investigation steps → Structured output format
-- Include which tools to call in what order
-- Output must be structured (JSON or defined Markdown sections) for downstream processing
+### 8. Runbook / diagnostics
+- 从症状和证据出发，不预设唯一根因；
+- 新动作必须能减少具体未知；
+- 证据足够后停止扩展排查。
 
 ### 9. 基础设施运维
-- Document operation procedures with explicit rollback strategies
-- Include pre-flight checks and post-operation validation
-- Specify logging and audit trail requirements
+- 记录 pre-flight、blast radius、rollback 和 post-check；
+- capability gap 不等价于修复授权；
+- 高风险环境变化需要单独授权边界。
 
 ### All Categories
-- Apply `references/anthropic-content-quality.md` checklist before finalizing SKILL.md
+- Apply `references/anthropic-content-quality.md` when relevant;
+- do not force a Pattern, script, asset, state file, hook, or reference merely to complete a template.
