@@ -1,190 +1,235 @@
-# ADK Skill Design Patterns
+# Canonical Local Behavior Patterns
 
-5 种核心设计模式，用于构建高质量 Agent Skills。
+This reference defines the five canonical **Local Behavior Patterns** used by Skill Architect.
+
+These five names form a closed pattern namespace:
+
+1. Tool Wrapper
+2. Generator
+3. Reviewer
+4. Inversion
+5. Pipeline
+
+Do not add Stateful / Memory, Reference-heavy, Hybrid, Router, Orchestrator, or coordination strategy names to this list. Those belong to other architectural dimensions.
+
+A Skill is not required to have a dominant Local Behavior Pattern. Use `none` only when no canonical pattern is stable across the Skill's major execution paths, or when no independent local user-facing behavior remains after runtime coordination is removed.
 
 ---
 
-## 1. Tool Wrapper（工具封装模式）
+## 1. Tool Wrapper
 
-**用途**：封装外部库、CLI 工具或 API，使其对 Agent 可用。
+**Purpose**: teach correct use of an external library, CLI, API, SDK, MCP, or tool.
 
-```
+```text
 skill-name/
-├── SKILL.md           # 调用规则、参数说明、触发条件
+├── SKILL.md           # invocation rules, safety boundaries, common usage
 ├── references/
-│   └── api-docs.md    # API 文档摘要、参数说明
-└── assets/
-    └── examples/      # 示例文件（可选）
+│   └── api-docs.md    # compact API notes, parameters, gotchas
+└── scripts/           # optional deterministic wrappers or checks
 ```
 
-**设计要点**：
-- `SKILL.md` 只写"怎么调用"，不写"API 细节"
-- API 文档、参数表放在 `references/`
-- 提供明确的触发短语（triggers）
+**Design signals**:
 
-**示例**：封装 yt-dlp、paddleocr、REST API
+- the model already knows the domain but repeatedly uses a tool incorrectly
+- tool-specific conventions, auth, parameters, deprecations, or gotchas matter
+- correct tool use is the core local outcome
+
+Do not classify something as Tool Wrapper merely because it happens to call a tool.
 
 ---
 
-## 2. Generator（生成器模式）
+## 2. Generator
 
-**用途**：根据模板生成结构化输出（代码、文档、配置文件等）。
+**Purpose**: produce structured content or artifacts under explicit output constraints.
 
-```
+```text
 skill-name/
-├── SKILL.md           # 生成流程、字段要求
+├── SKILL.md           # generation contract and required fields
 ├── references/
-│   └── conventions.md # 编码规范、命名约定
+│   └── conventions.md # rules and domain constraints
 └── assets/
-    └── template.md    # 输出模板
+    └── template.md    # reusable output template
 ```
 
-**设计要点**：
-- 使用 `assets/` 存放模板文件
-- `SKILL.md` 定义必需字段和生成逻辑
-- 分离"模板"与"填充规则"
+**Design signals**:
 
-**示例**：生成 PR Description、README.md、配置文件
+- success is primarily defined by the generated artifact
+- output schema, template, naming, or required fields materially constrain quality
+- generation is the stable local behavior across major execution paths
 
 ---
 
-## 3. Reviewer（评审模式）
+## 3. Reviewer
 
-**用途**：对代码、文档、配置等进行评审，输出结构化评审报告。
+**Purpose**: judge, audit, critique, verify, score, or compare an artifact, plan, state, or result.
 
-```
+```text
 skill-name/
-├── SKILL.md           # 评审流程、输出格式
+├── SKILL.md           # review protocol and output contract
 ├── references/
-│   └── checklist.md   # 评审准则清单
-└── assets/
-    └── report-template.md  # 评审报告模板
+│   └── checklist.md   # rubric, standards, severity definitions
+└── scripts/
+    └── score.*        # optional deterministic checks
 ```
 
-**设计要点**：
-- **关键**：分离 Checklist 与评审协议
-- Checklist 放在 `references/`，可独立更新
-- 评审流程写在 `SKILL.md`
+**Design signals**:
 
-**示例**：代码评审、安全审计、文档质量检查
+- the main outcome is a judgment or finding set
+- acceptance criteria, evidence, severity, or comparison matter
+- the Skill should challenge or validate rather than mainly create
 
 ---
 
-## 4. Inversion（反转模式）
+## 4. Inversion
 
-**用途**：通过多轮访谈采集信息，确保输入完整后再行动。
+**Purpose**: gather missing information before advice or action when incomplete input would materially change the result.
 
-```
+```text
 skill-name/
-├── SKILL.md           # 访谈流程、Phase 定义
+├── SKILL.md           # information-gathering contract and completion criteria
 ├── references/
-│   └── questions.md   # 问题库（可选）
+│   └── questions.md   # optional question bank
 └── assets/
-    └── form.md        # 信息采集表（可选）
+    └── form.md        # optional structured capture template
 ```
 
-**设计要点**：
-- **Phase-based**：定义清晰的访谈阶段
-- **禁止提前行动**：未完成采集前不生成输出
-- **Gate 条件**：每个 Phase 有明确的完成条件
+**Design signals**:
 
-**示例**：需求分析、项目规划、技术选型咨询
+- acting before information capture creates material risk or low-quality output
+- the Skill must expose uncertainty and collect missing facts first
+- information acquisition, not merely "asking a question", is the stable local behavior
+
+Do not require a rigid interview sequence unless the task genuinely needs ordered gates; otherwise that rigidity belongs neither to Inversion nor Pipeline by default.
 
 ---
 
-## 5. Pipeline（流水线模式）
+## 5. Pipeline
 
-**用途**：协调多步骤任务，确保每个步骤按条件执行。
+**Purpose**: enforce meaningful ordered phases where dependency, progression rules, or validation gates matter.
 
-```
+```text
 skill-name/
-├── SKILL.md           # Step 定义、Gate 条件、流转规则
+├── SKILL.md           # phase contract, gate conditions, transition rules
 ├── references/
-│   └── rules.md       # 业务规则（可选）
-└── assets/
-    └── templates/     # 各步骤的模板（可选）
+│   └── workflow.md    # detailed phase rules
+└── scripts/
+    └── validate.*     # optional deterministic gate checks
 ```
 
-**设计要点**：
-- **显式 Step**：每个步骤有明确输入输出
-- **Gate 条件**：定义步骤间的准入条件
-- **状态追踪**：记录当前执行状态
+**Design signals**:
 
-**示例**：复杂文件处理、多阶段代码生成、端到端工作流
+- later work depends on earlier work being completed or validated
+- phase transitions have explicit requirements or gates
+- skipping or reordering stages changes correctness
 
----
-
-## 模式组合
-
-复杂 Skill 可以组合多种模式：
-
-| 组合 | 适用场景 |
-|------|----------|
-| Pipeline + Inversion | 需要信息采集的多步任务 |
-| Pipeline + Generator | 多阶段内容生成 |
-| Inversion + Reviewer | 带信息核对的评审 |
-| Tool Wrapper + Pipeline | 多工具协调工作流 |
+A numbered list alone is not Pipeline. Do not expand Pipeline to mean "anything with multiple steps".
 
 ---
 
-## 最佳实践
+## Dominant Pattern Test
 
-1. **单一职责**：每个 Skill 专注一个核心功能
-2. **分离关注点**：逻辑、规则、模板分开存放
-3. **明确触发**：提供清晰的 triggers 描述
-4. **可测试性**：设计时可考虑如何验证效果
-5. **保持精简**：SKILL.md 控制在 500 行以内
+Use this test before assigning a dominant pattern:
+
+1. Temporarily ignore inter-Skill / inter-agent coordination.
+2. Inspect the Skill's major successful execution paths.
+3. Choose a dominant pattern only when one canonical pattern is the stable behavior skeleton across those paths and directly supports the core outcome.
+4. Use `none` when the Skill is primarily a meta-controller or policy selector whose major paths legitimately use different canonical patterns and no one pattern remains invariantly dominant.
+5. Also use `none` when removing Coordination leaves no independent user-facing local behavior.
+
+If a dominant pattern exists, secondary canonical patterns may be listed when they describe genuine supporting behavior.
 
 ---
 
-## Content Strategy by Scene Category
+## Pattern Composition
 
-These content guidelines apply AFTER pattern selection. Each category has distinct content priorities derived from Anthropic's production skill lessons.
+Composition is expressed as dominant + secondary. `Hybrid` is not a pattern name.
 
-### 1. 库 / API 参考
-- Lead with Gotchas: what does Claude do wrong when calling this API without guidance?
-- Include auth patterns, rate limit handling, and deprecated parameter warnings
-- Do NOT restate what the API docs already say
+| Composition | Example |
+| --- | --- |
+| Pipeline + Inversion | later gated phases depend on evidence collected first |
+| Pipeline + Generator | ordered stages produce one or more structured artifacts |
+| Reviewer + Generator | review first, then generate a corrected artifact |
+| Tool Wrapper + Pipeline | ordered workflow requires tool-specific correctness inside stages |
 
-### 2. 产品验证
-- Define acceptance criteria precisely — not "works correctly" but specific pass/fail conditions
-- Include edge cases that caused failures in past evals
-- This category has the highest quality uplift potential
+Do not let the secondary pattern bloat root `SKILL.md`.
 
-### 3. 数据获取分析
-- Document data source locations, query formats, and authentication requirements
-- Include rate limits and pagination patterns
-- Specify error handling for network failures and data format mismatches
+---
 
-### 4. 业务流程自动化
-- Describe trigger conditions and termination conditions explicitly
-- Include error handling and rollback paths
-- Avoid "railway" instructions — give Claude flexibility for variations
+## Coordination Is Separate
 
-### 5. 代码脚手架
-- Define template constraints and naming rules precisely
-- Include file structure requirements and mandatory sections
-- Specify what must be generated vs what is optional
+Router/orchestrator semantics are not Local Behavior Patterns.
 
-### 6. 代码质量审查
-- Provide checklist with severity levels (critical/warning/info)
-- Include specific patterns that indicate bugs or security issues
-- Define output format for review reports
+Runtime coordination uses a separate model:
 
-### 7. CI/CD 部署
-- Define step order with explicit gate conditions between stages
-- Include rollback triggers and failure handling
-- Specify environment-specific configurations
+```text
+Mechanism: none | handoff | delegate
+Strategy: open, domain-specific
+```
 
-### 8. Runbook
-- Structure: Symptom → Investigation steps → Structured output format
-- Include which tools to call in what order
-- Output must be structured (JSON or defined Markdown sections) for downstream processing
+- `handoff`: primary task ownership transfers to another independent executor.
+- `delegate`: current Skill retains overall ownership while assigning a bounded subtask to another independent executor.
+- frontmatter neighbor routing is Route, not Coordination.
+- tools, scripts, references, APIs, parallel file processing, or multiple records do not by themselves imply Coordination.
 
-### 9. 基础设施运维
-- Document operation procedures with explicit rollback strategies
-- Include pre-flight checks and post-operation validation
-- Specify logging and audit trail requirements
+Read `references/category-patterns.md` for the full coordination contract.
 
-### All Categories
-- Apply `references/anthropic-content-quality.md` checklist before finalizing SKILL.md
+---
+
+## Capability Is Separate
+
+State, memory, persistent audit, reference-heavy organization, deterministic validation scripts, and similar cross-cutting properties are not Local Behavior Patterns.
+
+The Capability taxonomy remains provisional until validated against real repository Skills.
+
+---
+
+## General Design Rules
+
+1. **Single responsibility**: keep one core architectural outcome per Skill.
+2. **Route first**: frontmatter description states when to load, not a marketing summary.
+3. **Keep root operational**: move long rules, examples, and gotchas into references.
+4. **Prefer deterministic helpers**: use scripts for repeatable validation, transformation, or scoring.
+5. **Do not railroad the agent**: use strict order only when dependency or risk justifies it.
+6. **Capture gotchas**: preserve domain-specific failure modes the base model would otherwise repeat.
+7. **Test routing separately from behavior**: trigger accuracy and task-quality improvement are different eval targets.
+
+---
+
+## Provisional Content Guidance by Category
+
+The category vocabulary below is working guidance, not a frozen taxonomy.
+
+### Library / API reference
+- Lead with tool-specific gotchas.
+- Include auth, rate limits, deprecated parameters, and version-sensitive behavior.
+- Do not restate generic API documentation the model already handles correctly.
+
+### Product validation
+- Define precise acceptance criteria and observable pass/fail evidence.
+- Include real edge cases from prior failures or evals.
+
+### Data retrieval and analysis
+- Document source locations, query formats, authentication, pagination, and data-shape gotchas.
+
+### Business workflow automation
+- Define trigger and termination conditions, error handling, and recovery boundaries.
+- Preserve agent flexibility where exact step order is not semantically required.
+
+### Code scaffolding
+- Define template constraints, naming rules, required files, and mandatory sections.
+
+### Code quality review
+- Provide a rubric with severity definitions and evidence expectations.
+
+### CI/CD deployment
+- Define true dependency order, gates, rollback triggers, and post-deploy verification.
+
+### Runbook / diagnostics
+- Organize evidence, hypotheses, investigation, and structured output.
+- Do not force tool order unless the order itself carries safety or dependency meaning.
+
+### Infrastructure operations
+- Define pre-flight checks, safety gates, rollback, audit, and verification requirements.
+
+### All categories
+- Apply `references/anthropic-content-quality.md` before finalizing Skill content.
