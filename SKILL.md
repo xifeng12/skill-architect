@@ -14,7 +14,8 @@ It helps decide:
 
 - whether something should become a Skill
 - when the Skill should load
-- which architecture pattern fits
+- which local behavior pattern fits, if any
+- whether runtime coordination is needed
 - how to split `SKILL.md`, `references/`, `assets/`, and `scripts/`
 - how to avoid routing overlap with neighboring Skills
 
@@ -82,6 +83,8 @@ Neighbor boundary:
 | "这个复杂任务该不该升级成 workflow？" | `dynamic-workflow` |
 | "这个生产变更怎么安全执行？" | safe-change / production safety Skill |
 
+Route boundaries are not runtime coordination. If routing selects a neighboring Skill before this Skill loads, record that under Route, not Coordination.
+
 ## Minimal Workflow
 
 Follow this order:
@@ -89,13 +92,14 @@ Follow this order:
 ```text
 1. Define route contract
 2. Decide Skill / non-Skill container
-3. Classify category
-4. Choose dominant pattern
-5. Identify neighbor Skills
-6. Design root SKILL.md responsibility
-7. Split long material into references/assets/scripts
-8. Define trigger tests
-9. Produce architecture recommendation
+3. Classify category (provisional taxonomy)
+4. Classify local behavior using the canonical five-pattern set
+5. Classify runtime coordination separately
+6. Identify neighboring Skills and route collisions
+7. Design root SKILL.md responsibility
+8. Split long material into references/assets/scripts
+9. Define trigger tests
+10. Produce architecture recommendation
 ```
 
 ## Skill / Non-Skill Decision
@@ -129,23 +133,77 @@ Container decision:
 | `scripts/` | Deterministic validation, formatting, conversion, scoring, setup |
 | Prompt | One-off wording or temporary instruction |
 
-## Pattern Fast Path
+## Local Behavior Pattern
 
-Choose the lightest pattern that makes the Skill reliable.
+Only these five names are canonical **Local Behavior Patterns** in this Skill Architect:
 
 ```text
 Needs external tool/API correctness? -> Tool Wrapper
 Needs structured generation? -> Generator
 Needs checking, audit, or judgment? -> Reviewer
-Needs multi-phase coordination? -> Pipeline
 Needs discovery before action? -> Inversion
-Needs history, state, or audit trail? -> Stateful / Memory
-Main value is gotchas and reference routing? -> Reference-heavy
+Needs ordered phases with dependency or validation gates? -> Pipeline
 ```
 
-Avoid over-patterning. A hybrid Skill should still have one dominant pattern.
+Do not add `Stateful / Memory`, `Reference-heavy`, `Hybrid`, `Router`, or `Orchestrator` to the pattern namespace. They answer different architectural questions.
 
-For detailed pattern mapping, read `references/category-patterns.md`.
+### Dominant Pattern Test
+
+A dominant Local Behavior Pattern is optional, not mandatory.
+
+1. Temporarily ignore inter-Skill / inter-agent coordination.
+2. Inspect the Skill's major successful execution paths.
+3. Select a dominant pattern only when one of the canonical five is the stable behavior skeleton across those major paths and is responsible for the core outcome.
+4. Use `none` when the Skill is primarily a meta-controller or policy selector whose major paths legitimately use different canonical patterns and no one pattern remains invariantly dominant.
+5. Also use `none` when removing Coordination leaves no independent user-facing local behavior.
+
+Do not choose Pipeline merely because a Skill contains numbered steps. Pipeline requires meaningful ordered dependency, phase progression, or validation gates.
+
+Secondary patterns are allowed when they describe genuine supporting behavior. `Hybrid` is not a sixth pattern; it means dominant + secondary composition.
+
+For detailed mapping, read `references/category-patterns.md` and `references/design-patterns.md`.
+
+## Coordination
+
+Classify runtime coordination separately from Local Behavior.
+
+### Coordination Mechanism
+
+The mechanism vocabulary is closed:
+
+| Mechanism | Meaning |
+| --- | --- |
+| `none` | No task responsibility is assigned to another independent Skill / agent / executor. |
+| `handoff` | The current Skill transfers primary task ownership to another independent Skill / agent / executor. |
+| `delegate` | The current Skill retains overall ownership while assigning a bounded subtask to another independent Skill / agent / executor and consuming its result. |
+
+Rules:
+
+- Neighbor routing in frontmatter or `Do not load` boundaries is Route, not Coordination.
+- Tool calls, scripts, references, files, APIs, or parallel data processing are not Coordination by themselves.
+- `handoff` is about ownership transfer; `delegate` is about ownership retention.
+
+### Coordination Strategy
+
+Strategy is intentionally open, not a closed taxonomy.
+
+A strategy may describe:
+
+- selection policy: static / dynamic
+- cardinality: one / many
+- scheduling: sequential / parallel / adaptive
+- aggregation: none / synthesize / compare / review / other
+- termination: handoff-complete / all-complete / first-success / confidence threshold / explicit stop / other
+
+Skills may use domain-specific strategy names such as `Classify-and-act` or `Fan-out-and-synthesize`. Do not promote those names into the Coordination Mechanism enum.
+
+## Category and Capability Status
+
+Category and Capability are separate architectural dimensions, but their canonical vocabularies are **not frozen yet**.
+
+Current category tables are provisional guidance, not a closed taxonomy.
+
+State, memory, reference-heavy organization, deterministic validation scripts, persistent audit, and similar cross-cutting properties must not be treated as Local Behavior Patterns. Record them as capability candidates until the Capability taxonomy is validated against real Skills.
 
 ## Root File Responsibility
 
@@ -157,7 +215,8 @@ Keep in root:
 - use / do-not-use boundary
 - core principle
 - minimal workflow
-- pattern fast path
+- local behavior fast path
+- coordination contract when relevant
 - safety gates
 - output contract
 - reference routing
@@ -175,7 +234,8 @@ Move out of root:
 Reference routing:
 
 - Read `references/description-examples.md` when improving or reviewing frontmatter descriptions.
-- Read `references/category-patterns.md` when category or pattern choice is unclear.
+- Read `references/category-patterns.md` when category, local behavior, or coordination choice is unclear.
+- Read `references/design-patterns.md` for the canonical five Local Behavior Patterns and composition rules.
 - Read `references/capture-guide.md` when collecting information before designing a Skill.
 - Read `references/directory-templates.md` when proposing a file structure.
 - Read `references/gotchas-guide.md` when extracting domain gotchas or lessons learned.
@@ -189,9 +249,14 @@ Before delivering a Skill architecture, verify:
 - [ ] Description is written as a route trigger, not a feature summary
 - [ ] Load and do-not-load cases are explicit
 - [ ] Neighbor Skills are named when relevant
+- [ ] Neighbor routing is not mislabeled as runtime handoff
 - [ ] Skill / non-Skill decision is justified
-- [ ] Dominant pattern is selected
+- [ ] Local Behavior uses only the canonical five pattern names, or `none` with a stated reason
+- [ ] A dominant pattern is selected only when it passes the stable-behavior test
 - [ ] Secondary pattern does not bloat the design
+- [ ] Coordination mechanism, when present, is `handoff` or `delegate` with ownership semantics stated
+- [ ] Coordination strategy is kept separate from mechanism
+- [ ] Stateful / Memory, Reference-heavy, and Hybrid are not mislabeled as patterns
 - [ ] Root `SKILL.md` remains small and operational
 - [ ] Long guidance is pushed to `references/`
 - [ ] Deterministic checks are pushed to `scripts/`
@@ -227,8 +292,10 @@ When responding as Skill Architect, include:
 - clear recommendation
 - route contract
 - Skill / non-Skill decision
-- dominant category
-- pattern choice
+- category, explicitly marked provisional when relevant
+- Local Behavior: dominant / secondary / none with reason
+- Coordination Mechanism and Strategy when runtime coordination exists
+- capability candidates, explicitly marked provisional
 - suggested structure
 - root `SKILL.md` plan
 - reference split plan
