@@ -8,9 +8,12 @@ The experiment was intentionally downstream of the Agent Skill article synthesis
 
 Use these labels:
 
-- `SUPPORTED_BY_RUNTIME`: observed repeatedly in the experiment.
-- `SUPPORTED_WITH_SCOPE`: observed, but only for the tested scope/runtime.
-- `UNRESOLVED`: the experiment did not establish a general conclusion.
+- `OBSERVED_IN_RUNTIME`: directly observed in at least one executed validation case.
+- `REPEATED_ACROSS_CASES`: the same structural behavior was observed in more than one relevant case/round.
+- `SCOPE_LIMITED`: directly observed, but the conclusion must remain tied to the tested runtime/scenario.
+- `UNRESOLVED`: the experiment did not establish a conclusion.
+
+These labels describe this project's validation strength. They are not an official Agent Skill evidence taxonomy.
 
 Do not promote a project observation into an official Pattern definition.
 
@@ -18,9 +21,9 @@ Do not promote a project observation into an official Pattern definition.
 
 ### E1 — Semantic routing does not require literal trigger words
 
-Status: `SUPPORTED_BY_RUNTIME`
+Status: `OBSERVED_IN_RUNTIME`
 
-A remembered Chinese long-form article query inferred the WeChat ecosystem as a high-fit source even though the user did not say `WeChat`, `微信`, or `公众号`.
+In V2-4, a remembered Chinese long-form article query inferred the WeChat ecosystem as a high-fit source even though the user did not say `WeChat`, `微信`, or `公众号`.
 
 Architecture implication:
 
@@ -30,18 +33,19 @@ Architecture implication:
 What this does **not** prove:
 
 - the underlying retrieval backend performs vector/semantic search;
-- every Chinese-language query should route to WeChat.
+- every Chinese-language query should route to WeChat;
+- every model/runtime will reproduce the same semantic route without further evals.
 
 ### E2 — Operational status and semantic coverage are separate axes
 
-Status: `SUPPORTED_BY_RUNTIME`
+Status: `OBSERVED_IN_RUNTIME`
 
-The final specialist case required two independent judgments:
+V2-4 required two independent judgments:
 
-1. `operational_status`: `AVAILABLE / UNKNOWN / UNAVAILABLE`;
-2. `coverage_grade`: whether a path is semantically `EQUIVALENT / DEGRADED` for the information need.
+1. `operational_status`: whether the specialist was actually established as viable in the current runtime (`UNKNOWN` in the case);
+2. `coverage_grade`: whether a path semantically covered the information need equivalently or only in degraded form.
 
-A specialist could remain `UNKNOWN` while an available general fallback was correctly classified `DEGRADED`.
+The specialist remained `UNKNOWN` while an available general fallback was correctly classified `DEGRADED`.
 
 Architecture implication:
 
@@ -50,9 +54,9 @@ Architecture implication:
 
 ### E3 — UNKNOWN is not MISSING
 
-Status: `SUPPORTED_BY_RUNTIME`
+Status: `OBSERVED_IN_RUNTIME`
 
-Absence observations without an authoritative inventory scope did not justify `MISSING` or a confirmed dependency gap.
+V2-4 had absence observations but no authoritative inventory scope. That evidence did not justify `MISSING` or a confirmed dependency gap.
 
 Architecture implication:
 
@@ -62,9 +66,9 @@ Architecture implication:
 
 ### E4 — A degraded fallback may be selected without first proving a confirmed gap
 
-Status: `SUPPORTED_WITH_SCOPE`
+Status: `SCOPE_LIMITED`
 
-When the high-fit specialist was not viable because its operational status was `UNKNOWN`, the only available general-web path was used with explicit coverage disclosure.
+In V2-4, the high-fit specialist was not viable because its operational status remained `UNKNOWN`. The only available general-web path was used with explicit coverage disclosure and still produced useful discovery candidates.
 
 Architecture implication:
 
@@ -78,11 +82,16 @@ A fallback can be valid when all are true:
 
 This is distinct from "fallback for completeness".
 
+What this does **not** prove:
+
+- every degraded fallback is acceptable;
+- a degraded path can satisfy a source-specific requirement that explicitly demands the unavailable specialist.
+
 ### E5 — Missing or unverified capability does not imply environment repair
 
-Status: `SUPPORTED_BY_RUNTIME`
+Status: `REPEATED_ACROSS_CASES`
 
-Across the experiment, an unavailable or unverified capability did not authorize installing providers, modifying MCP, changing PATH, repairing TLS, or otherwise mutating the runtime.
+Across the V2 validation sequence, unavailable, blocked, or unverified capabilities did not authorize installing providers, modifying MCP, changing PATH, repairing TLS, or otherwise mutating the runtime.
 
 Architecture implication:
 
@@ -91,9 +100,9 @@ Architecture implication:
 
 ### E6 — Discovery and reading can be separate stopping points
 
-Status: `SUPPORTED_BY_RUNTIME`
+Status: `OBSERVED_IN_RUNTIME`
 
-For article discovery, useful candidates were enough to stop. Full-body reading was not required unless the user's goal required synthesis or confirmation from the article body.
+In V2-4, useful article candidates were enough to complete the discovery goal. Full-body reading was not required because the user goal was "find it", not synthesis or content verification.
 
 Architecture implication:
 
@@ -102,9 +111,9 @@ Architecture implication:
 
 ### E7 — Evidence STOP reduced provider fan-out
 
-Status: `SUPPORTED_BY_RUNTIME`
+Status: `REPEATED_ACROSS_CASES`
 
-The tested flows stopped once the user-facing information need and limitation disclosure were satisfied. Additional providers were not called "for completeness".
+Across the validation sequence, tested flows stopped once the user-facing information need, capability result, or limitation disclosure was sufficient for the case. Additional providers were not called merely "for completeness".
 
 Architecture implication:
 
@@ -112,9 +121,9 @@ Before another retrieval or phase transition, require a concrete remaining unkno
 
 ### E8 — Tool identity does not prove failure-domain independence
 
-Status: `SUPPORTED_WITH_SCOPE`
+Status: `SCOPE_LIMITED`
 
-The runtime showed control-plane hooks could block different call shapes and could behave non-deterministically across otherwise similar commands. A different command or provider name was therefore not sufficient evidence of an independent failure domain.
+V2-3 showed that multiple call shapes could be intercepted by the same control plane, and V2-4 again observed that a superficially similar Bash/curl shape could be blocked before execution while an already-known independent network channel remained usable.
 
 Architecture implication:
 
@@ -125,22 +134,33 @@ Architecture implication:
 What this does **not** prove:
 
 - hook behavior is universally non-deterministic;
-- a specific shell, provider, or network stack is always in the same failure domain.
+- a specific shell, provider, or network stack is always in the same failure domain;
+- two tools that failed once necessarily share a permanent failure domain.
 
 ## Pattern implications
 
-The experiment was useful without proving that the Skill must be assigned a named Pattern.
+The standalone Skill completed useful runtime validation without requiring the experiment to assign it a named Pattern first.
 
-Therefore:
+Status: `OBSERVED_IN_RUNTIME`
 
-- do not force every Skill into a named Pattern;
+Architecture implication:
+
+- do not force every Skill into a named Pattern before it can be designed or tested;
 - keep the five documented Pattern names (`Tool Wrapper`, `Generator`, `Reviewer`, `Inversion`, `Pipeline`) distinct from local behavior descriptors;
 - `Stateful/Memory`, `Reference-heavy`, coordination style, runtime capability handling, and similar concerns may influence architecture without becoming new Pattern names;
-- `Pattern = none` is a valid outcome when no named Pattern materially explains the Skill's core reusable behavior.
+- `Pattern = none` is a valid architecture outcome when no named Pattern materially explains the Skill's core reusable behavior.
+
+What this does **not** prove:
+
+- the external-knowledge Skill can never be usefully described as a composition of one or more named Patterns;
+- Pattern analysis has no value;
+- the five named Patterns are an exhaustive ontology of all possible Agent Skill behavior.
 
 ## Validation discipline
 
-The four-round experiment reached a stopping condition because new rounds were no longer expected to change the architecture decision.
+The V2 sequence reached a stopping condition after V2-1 onboarding/correction, V2-2 ordinary-query behavior, V2-3 shared-failure-domain behavior, and V2-4 specialist-unverified/degraded-fallback behavior.
+
+At that point, additional dedicated cases were not expected to change the architecture decision.
 
 Do not continue adding cases solely to make every capability/status cell green.
 
