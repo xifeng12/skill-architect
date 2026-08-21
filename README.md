@@ -22,10 +22,6 @@ For the **full skill creation lifecycle** (eval, iterate, package, retire), use 
 
 For content quality rules (description writing, gotchas, state files), always apply [`references/anthropic-content-quality.md`](references/anthropic-content-quality.md).
 
-## Architecture validation examples
-
-- [`examples/external-knowledge`](examples/external-knowledge/) — experimental real-world Skill that validates route-first design, Data Retrieval + Pipeline architecture, source-semantic routing, neighboring specialist ownership, semantic WeChat discovery, gap-based escalation, runtime capability boundaries, and minimum-sufficient STOP behavior. The first runtime target is ZCode; Firecrawl is intentionally treated as unavailable rather than reinstalled for the test.
-
 ## Repo layout
 
 ```
@@ -36,10 +32,8 @@ skill-architect/
 ├── references/
 │   ├── design-patterns.md         # pattern deep-dive + content strategy by category
 │   └── anthropic-content-quality.md
-├── assets/
-│   └── skill-template.md
-└── examples/
-    └── external-knowledge/        # architecture validation example
+└── assets/
+    └── skill-template.md
 ```
 
 ## License
