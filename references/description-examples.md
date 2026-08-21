@@ -1,38 +1,44 @@
 # Description Examples
 
-The frontmatter `description` is a routing trigger, not a feature summary.
+The frontmatter `description` is a routing/discovery surface, not a feature summary.
 
 ## Good Description Rules
 
 A good description:
 
-- starts with "Use when..." or "Load when..."
-- describes user intent, not internal implementation
-- includes realistic user phrasing
-- names important exclusions when nearby Skills exist
-- is short enough to act as a routing trigger
-- avoids listing every capability
-- avoids workflow summaries
-- avoids marketing language
+- starts from `Use when...` / `Load when...` semantics;
+- describes user intent, information need, or task situation rather than internal implementation;
+- can include realistic user phrasing as examples;
+- names important exclusions when nearby Skills exist;
+- is concise enough to route effectively;
+- avoids listing every capability or provider;
+- avoids workflow summaries and marketing language.
+
+The route should still work when the user paraphrases the intent without using the example trigger words.
 
 ## Bad Description Smells
 
 Refactor the description if it:
 
-- starts with "This skill provides..."
-- explains the whole workflow
-- lists internal files
-- says "helps with X" without trigger conditions
-- uses vague words like "improve", "optimize", "support", "assist"
-- overlaps with another Skill without boundary language
-- is so broad that it could load for many unrelated tasks
+- starts with `This skill provides...`;
+- explains the whole workflow;
+- lists internal files/tools as the main routing signal;
+- says `helps with X` without trigger conditions;
+- uses vague words like `improve`, `optimize`, `support`, `assist` without a situation boundary;
+- overlaps with another Skill without boundary language;
+- is so broad that it could load for many unrelated tasks;
+- depends on exact literal keywords even though the underlying intent has common paraphrases.
 
 ## Template
 
 ```yaml
 description: |
-  Use when the user asks [intent], [intent], or [intent]. Also use for phrases like "[real phrase]" and "[real phrase]". Do not use when [neighbor intent]; use [neighbor-skill] instead.
+  Use when the user needs {intent / information need / task situation}.
+  Also use when {semantic paraphrase or adjacent in-scope situation}.
+  Do not use when {neighbor intent}; use {neighbor-skill} instead.
 ```
+
+Literal phrases may be added after the semantic route when they improve discoverability, but they are examples rather than a closed trigger list.
 
 ## Examples
 
@@ -61,7 +67,7 @@ Better:
 
 ```yaml
 description: |
-  Use when the user needs a safe database migration plan, dry-run strategy, rollback design, batch execution guard, or production data change checklist.
+  Use when the user needs a safe database migration plan, dry-run strategy, rollback design, batch execution guard, or production data-change procedure.
 ```
 
 Bad:
@@ -75,8 +81,27 @@ Better:
 
 ```yaml
 description: |
-  Use when the user asks how to design an Agent Skill, choose a skill pattern, split SKILL.md and references, define routing conditions, or decide whether content belongs in a Skill, AGENTS.md, script, prompt, or reference file. Do not use to build or package the Skill; use skill-forge.
+  Use when the user asks how to design an Agent Skill, decide whether a Skill is the right container, determine whether one of the named Patterns applies, split SKILL.md and references, define routing conditions, or decide whether content belongs in a Skill, AGENTS.md, script, prompt, or reference file. Do not use to build, test, package, or publish the Skill; use skill-forge.
 ```
+
+## Semantic Trigger Example
+
+Suppose a source-specialist Skill should handle remembered Chinese long-form articles.
+
+Too literal:
+
+```yaml
+description: Use when the user says WeChat, 微信, or 公众号.
+```
+
+Better:
+
+```yaml
+description: |
+  Use when the user wants to discover Official Account articles or is trying to find a remembered Chinese long-form article for which the WeChat ecosystem is a high-fit source. Chinese language alone is not sufficient.
+```
+
+This lets the route activate from meaning without claiming that the underlying search backend itself performs semantic/vector retrieval.
 
 ## Neighbor Boundary Template
 
@@ -92,21 +117,21 @@ description: |
 
 ## Trigger Eval Set
 
-Every description should have at least these tests:
+At minimum, test behavior that could falsify the route contract:
 
 ```markdown
 Should load:
-- [realistic user phrase]
-- [realistic user phrase]
-- [edge phrase still inside scope]
+- [realistic direct phrase]
+- [semantic paraphrase without the obvious literal trigger]
 
 Should not load:
 - [neighbor intent]
-- [generic query]
-- [one-off task better handled without Skill]
+- [generic/stable query]
 
 Ambiguous:
 - phrase: "..."
   expected route: ...
   reason: ...
 ```
+
+Do not keep adding paraphrase cases once new runs no longer change the routing conclusion.
