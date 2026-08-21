@@ -1,207 +1,215 @@
-# SKILL.md 模板
+# SKILL.md Architecture Templates
 
-本模板用于生成符合 ADK 规范的 Skill 配置文件。
+These are architecture examples, not mandatory boilerplate.
 
----
+Start from the route contract and reusable behavior. Do not begin by choosing a Pattern or filling every section.
 
-## 基础结构
+## Minimal / Pattern-none Template
+
+Use when no named Pattern is needed.
 
 ```markdown
 ---
 name: {skill-name}
 description: |
-  {功能描述}
-  {触发条件说明}
-  Triggers: "{触发短语1}", "{触发短语2}"
+  Use when {describe the user intent / situation that should load this Skill}.
+  Do not use when {closest negative route or neighbor boundary}.
 ---
 
-# {Skill 标题}
+# {Skill title}
 
-{简短说明}
+{One-sentence goal.}
 
-## 核心功能
+## Core behavior
 
-{主要功能点}
+- {decision / rule / reusable behavior}
+- {decision / rule / reusable behavior}
 
-## 使用方法
+## Stop
 
-{使用说明}
-
-## 注意事项
-
-{重要提醒}
+Stop when {goal-dependent sufficiency condition}.
 ```
 
----
+This is a valid complete Skill if it reliably changes the intended behavior.
 
-## YAML Frontmatter 规范
+## Frontmatter Guidance
 
-| 字段 | 说明 | 示例 |
-|------|------|------|
-| `name` | Skill 唯一标识符，小写连字符 | `skill-architect` |
-| `description` | 功能描述 + 触发条件 | 见下方说明 |
+| Field | Purpose | Example |
+|---|---|---|
+| `name` | Stable Skill identifier | `skill-architect` |
+| `description` | Semantic route contract | `Use when the user asks how to design an Agent Skill...` |
 
-### description 编写规范
+### Description rule
+
+Prefer:
 
 ```yaml
 description: |
-  {功能描述 - 一句话}
-  {触发条件说明 - 何时使用此 skill}
-  Triggers: "{短语1}", "{短语2}", "{短语3}"
+  Use when the user asks {intent / information need / task situation}.
+  Do not use when {close negative route}.
 ```
 
----
+Literal trigger phrases may be included as examples when useful, but they are not the routing contract.
 
-## 各模式模板
+Avoid feature-summary descriptions such as:
 
-### Tool Wrapper 模板
+```yaml
+description: This skill provides tools for ...
+```
+
+## Named Pattern Templates
+
+Use these only after deciding that the named Pattern materially explains the Skill's core behavior.
+
+### Tool Wrapper
 
 ```markdown
 ---
-name: {tool-name}-wrapper
+name: {tool-name}-guide
 description: |
-  封装 {tool-name} 工具，提供 {核心功能} 能力。
-  Triggers: "调用{工具}", "使用{工具}", "{tool-cli-cmd}"
+  Use when the user needs to {perform a task whose correctness depends on using tool-name correctly}.
+  Do not use when {the task does not depend on this tool or a better specialist owns it}.
 ---
 
-# {Tool Name} Wrapper
+# {Tool Name}
 
-封装 {tool-name} 的核心功能。
+## Core usage contract
 
-## 可用操作
+- {what semantic job the tool owns}
+- {critical parameter / scope / gotcha}
+- {what to do when the tool is unavailable}
 
-| 操作 | 命令 | 说明 |
-|------|------|------|
-| {op1} | `{cmd1}` | {desc1} |
-
-## 参数说明
-
-见 `references/params.md`。
-
-## 示例
-
-{使用示例}
+Read `references/tool-usage.md` only when detailed parameters or errors are needed.
 ```
 
-### Generator 模板
+Do not embed installer/config repair unless environment mutation is explicitly part of the Skill's authorized goal.
+
+### Generator
 
 ```markdown
 ---
 name: {name}-generator
 description: |
-  生成 {输出类型}，遵循 {规范名称} 规范。
-  Triggers: "生成{类型}", "创建{类型}", "write {type}"
+  Use when the user asks to create {structured artifact} under {stable constraints}.
 ---
 
 # {Name} Generator
 
-根据模板生成 {输出类型}。
+## Required information
 
-## 必需字段
+- {field}: {why required}
 
-- {field1}: {说明}
+## Generation contract
 
-## 模板
-
-见 `assets/template.md`。
-
-## 生成流程
-
-1. 采集必需信息
-2. 验证字段完整性
-3. 填充模板
-4. 输出结果
+1. Use the supplied information and constraints.
+2. Ask only for genuinely blocking missing information.
+3. Produce the artifact using `assets/template.md` when the template is actually needed.
+4. Validate mandatory constraints.
 ```
 
-### Reviewer 模板
+### Reviewer
 
 ```markdown
 ---
 name: {name}-reviewer
 description: |
-  评审 {评审对象}，输出结构化报告。
-  Triggers: "评审{对象}", "review {object}", "检查{对象}"
+  Use when the user asks to review, audit, verify, or critique {target} against {criteria/domain}.
 ---
 
 # {Name} Reviewer
 
-对 {评审对象} 进行评审。
+## Review contract
 
-## 评审准则
-
-见 `references/checklist.md`。
-
-## 评审流程
-
-1. 读取目标文件
-2. 逐项检查准则
-3. 生成评审报告
-
-## 输出格式
-
-见 `assets/report-template.md`。
+- Read the target.
+- Apply the relevant criteria from `references/checklist.md`.
+- Separate evidence, inference, and unknowns when that affects the verdict.
+- Stop when additional checking will not change the verdict, severity, or next action.
 ```
 
-### Inversion 模板
+### Inversion
 
 ```markdown
 ---
-name: {name}-collector
+name: {name}
 description: |
-  通过多轮访谈采集 {信息类型} 信息。
-  Triggers: "分析{类型}", "采集{信息}", "{领域}分析"
+  Use when advice or action about {domain} would be unreliable until key missing information is gathered.
 ---
 
-# {Name} Collector
+# {Name}
 
-采集 {信息类型} 信息。
+## Information gate
 
-## 访谈阶段
+Before acting, determine which missing facts are genuinely blocking.
 
-### Phase 1: {阶段名}
+Ask only for those facts that cannot be resolved from available context/tools.
 
-**目标**: {阶段目标}
-**问题**: {关键问题}
-**Gate**: {完成条件}
+Proceed as soon as the gate is satisfied.
 
-## 禁止事项
-
-- 信息不完整时禁止生成输出
-- 禁止跳过任何 Phase
+Do not repeat questions the user or environment has already answered.
 ```
 
-### Pipeline 模板
+Inversion does **not** imply a fixed questionnaire or a rule that every phase must always run.
+
+### Pipeline
 
 ```markdown
 ---
-name: {name}-pipeline
+name: {name}
 description: |
-  执行 {任务名} 的多步流水线。
-  Triggers: "{动词}{对象}", "run {name}"
+  Use when {task} requires multiple phases or gates whose ordering materially affects correctness.
 ---
 
-# {Name} Pipeline
+# {Name}
 
-{任务描述}
+## Phases
 
-## 流水线步骤
+### Phase 1 — {name}
 
-### Step 1: {步骤名}
+Goal: {goal}
+Exit when: {condition}
 
-**输入**: {输入说明}
-**处理**: {处理逻辑}
-**输出**: {输出说明}
-**Gate**: {准入条件}
+### Phase 2 — {name}
 
-### Step 2: {步骤名}
+Enter only when: {condition}
+Goal: {goal}
+Exit when: {condition}
 
-{同上结构}
+## Stop
+
+Do not execute later phases merely because they exist. Stop once the user's goal is satisfied or the next phase is not authorized/needed.
 ```
 
----
+## Local Behavior Notes
 
-## 命名规范
+Add only when needed.
 
-- Skill 名称：小写连字符，如 `code-reviewer`
-- 目录名：与 Skill 名称一致
-- 文件名：小写连字符，如 `design-patterns.md`
+Examples:
+
+```markdown
+## Runtime capability behavior
+
+- Keep UNKNOWN distinct from confirmed missing.
+- Separate operational availability from semantic coverage.
+- Use degraded fallback only with a concrete reason and disclose material coverage loss.
+- Do not mutate the environment unless authorized.
+```
+
+```markdown
+## State requirement
+
+Persist {specific state} because {cross-run/audit need}.
+```
+
+```markdown
+## Coordination
+
+Use bounded parallel work only for {independent tracks}. Do not fan out simple tasks.
+```
+
+Do not turn these notes into new Pattern names.
+
+## Naming
+
+- Skill name: lowercase kebab-case when supported by the target runtime, e.g. `code-reviewer`.
+- Directory name: normally match the Skill name.
+- Reference/asset/script names: descriptive and scoped to actual need.
