@@ -25,7 +25,7 @@ These labels describe this project's validation strength; they are not an offici
 
 Status: `OBSERVED_IN_RUNTIME`
 
-The WeChat case goal (source semantic `WeChat article discovery`) was served by multiple candidate providers; the capability (`complex-web.read` for that source semantic) existed independently of any single provider's inventory status.
+The WeChat case goal used source semantic `wechat.article-discovery` and capability `wechat.discovery` in the v0.3-beta.1 adapter. That capability existed independently of any single provider's inventory status. Earlier discussion sometimes used the conceptual label `article-discovery.wechat`; the current adapter Source of Truth is `wechat.discovery`. `complex-web.read` is a separate extraction/read capability and is not the capability ID for this discovery case.
 
 Architecture implication:
 
