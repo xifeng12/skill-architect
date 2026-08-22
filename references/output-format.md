@@ -93,11 +93,16 @@ For each relevant capability distinguish:
 
 - operational status: AVAILABLE / UNKNOWN / UNAVAILABLE (or the project's equivalent evidence-backed states)
 - semantic coverage: equivalent / degraded / not applicable
+- source discoverability (only when source-specific retrieval matters): LIMITED_OBSERVED / VERY_LOW_OBSERVED / UNKNOWN / not applicable
+- capability vs provider: one capability can have multiple providers; a missing provider is not a missing capability
+- carrier vs execution surface: skill directory / plugin / config registration is a carrier, not an independent execution surface; do not double-count
 - fallback condition: ...
 - coverage disclosure required: yes/no
 - environment mutation authorized: yes/no
 
 Do not infer `MISSING` from a non-authoritative absence observation.
+
+Static exposure present is not provider `AVAILABLE`; availability requires runtime exposure plus a representative probe. State absence claims together with their authority/scope.
 
 ## Suggested Structure
 

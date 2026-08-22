@@ -179,6 +179,12 @@ When a Skill depends on tools, providers, plugins, MCP servers, or runtime-speci
 
 1. **Operational status** — is the capability actually callable in this runtime?
 2. **Semantic coverage** — if used, does it cover the user's required source/meaning equivalently, or only partially?
+3. **Source discoverability** — when source-specific retrieval matters, can this provider × source semantic actually surface the needed source? Use bounded labels (`LIMITED_OBSERVED`, `VERY_LOW_OBSERVED`, `UNKNOWN`); do not claim a strong state like `STRUCTURAL_BLIND_SPOT` without mechanism-level evidence.
+4. **Provider vs capability** — a capability can have multiple providers; a missing provider does not prove the capability is missing.
+5. **Carrier vs execution surface** — a skill directory, plugin, or config registration is a carrier, not an independent execution surface; do not double-count `plugin → MCP` or `skill → CLI/local_script` as two exposures.
+6. **Scoped authority** — absence evidence is scoped to its authority and view; `which("tool") = None` proves only current-process PATH exposure absence, not machine-wide absence.
+
+Static exposure present does not make a provider `AVAILABLE`; availability requires runtime exposure plus a representative probe or equivalent direct-callable evidence.
 
 Do not collapse `UNKNOWN` into `MISSING` merely because a capability was not observed in one inventory or session.
 
@@ -188,7 +194,7 @@ Missing or unverified capability does not by itself authorize installation, MCP 
 
 Different tool names or command shapes do not by themselves prove independent failure domains. If runtime evidence shows two paths share a control plane/failure domain, stop enumerating siblings from that same domain unless a new path serves the current goal.
 
-Read `references/runtime-evidence-external-knowledge-v0.2.1.md` when designing runtime-dependent routing, fallback, capability, or stop behavior.
+Read `references/runtime-evidence-external-knowledge-v0.2.1.md` and `references/runtime-evidence-external-knowledge-v0.3.md` when designing runtime-dependent routing, fallback, capability, or stop behavior.
 
 ## Root File Responsibility
 
@@ -226,6 +232,7 @@ Reference routing:
 - Read `references/gotchas-guide.md` when extracting domain gotchas or lessons learned.
 - Read `references/anti-patterns.md` when reviewing an existing Skill for design problems.
 - Read `references/runtime-evidence-external-knowledge-v0.2.1.md` for runtime-dependent routing/fallback evidence.
+- Read `references/runtime-evidence-external-knowledge-v0.3.md` for provider/capability, carrier/exposure, scoped-authority, and retrieval-quality evidence.
 - Read `references/output-format.md` when producing a full architecture recommendation.
 
 ## Quality Checklist
